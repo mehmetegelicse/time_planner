@@ -157,7 +157,7 @@ class _TimePlannerState extends State<TimePlanner> {
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if(showHeader)SingleChildScrollView(
+            if(widget.showHeader)SingleChildScrollView(
               controller: dayHorizontalController,
               scrollDirection: Axis.horizontal,
               physics: const NeverScrollableScrollPhysics(),
