@@ -18,6 +18,9 @@ class TimePlanner extends StatefulWidget {
   /// you should create at least one day
   final List<TimePlannerTitle> headers;
 
+  ///option to show header.
+  final bool showHeader;
+
   /// List of widgets on time planner
   final List<TimePlannerTask>? tasks;
 
@@ -40,11 +43,13 @@ class TimePlanner extends StatefulWidget {
     required this.endHour,
     required this.headers,
     this.tasks,
+    this.showHeader = true,
     this.style,
     this.use24HourFormat = false,
     this.setTimeOnAxis = false,
     this.currentTimeAnimation,
   }) : super(key: key);
+
   @override
   _TimePlannerState createState() => _TimePlannerState();
 }
@@ -107,7 +112,9 @@ class _TimePlannerState extends State<TimePlanner> {
     _initData();
     super.initState();
     Future.delayed(Duration.zero).then((_) {
-      int hour = DateTime.now().hour;
+      int hour = DateTime
+          .now()
+          .hour;
       if (isAnimated != null && isAnimated == true) {
         if (hour > widget.startHour) {
           double scrollOffset =
@@ -150,7 +157,7 @@ class _TimePlannerState extends State<TimePlanner> {
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            SingleChildScrollView(
+            if(showHeader)SingleChildScrollView(
               controller: dayHorizontalController,
               scrollDirection: Axis.horizontal,
               physics: const NeverScrollableScrollPhysics(),
@@ -168,7 +175,9 @@ class _TimePlannerState extends State<TimePlanner> {
             ),
             Container(
               height: 1,
-              color: style.dividerColor ?? Theme.of(context).primaryColor,
+              color: style.dividerColor ?? Theme
+                  .of(context)
+                  .primaryColor,
             ),
             Expanded(
               child: Row(
@@ -190,8 +199,8 @@ class _TimePlannerState extends State<TimePlanner> {
                             children: <Widget>[
                               //first number is start hour and second number is end hour
                               for (int i = widget.startHour;
-                                  i <= widget.endHour;
-                                  i++)
+                              i <= widget.endHour;
+                              i++)
                                 Padding(
                                   // we need some additional padding horizontally if we're showing in am/pm format
                                   padding: EdgeInsets.symmetric(
@@ -207,10 +216,12 @@ class _TimePlannerState extends State<TimePlanner> {
                           ),
                           Container(
                             height:
-                                (config.totalHours * config.cellHeight!) + 80,
+                            (config.totalHours * config.cellHeight!) + 80,
                             width: 1,
                             color: style.dividerColor ??
-                                Theme.of(context).primaryColor,
+                                Theme
+                                    .of(context)
+                                    .primaryColor,
                           ),
                         ],
                       ),
@@ -254,7 +265,7 @@ class _TimePlannerState extends State<TimePlanner> {
                       SizedBox(
                         height: (config.totalHours * config.cellHeight!) + 80,
                         width:
-                            (config.totalDays * config.cellWidth!).toDouble(),
+                        (config.totalDays * config.cellWidth!).toDouble(),
                         child: Stack(
                           children: <Widget>[
                             Column(
@@ -269,7 +280,7 @@ class _TimePlannerState extends State<TimePlanner> {
                                             ? style.interstitialOddColor
                                             : style.interstitialEvenColor,
                                         height:
-                                            (config.cellHeight! - 1).toDouble(),
+                                        (config.cellHeight! - 1).toDouble(),
                                       ),
                                       // The horizontal lines tat divides the rows
                                       //TODO: Make a configurable color for this (maybe a size too)
@@ -289,14 +300,14 @@ class _TimePlannerState extends State<TimePlanner> {
                                     children: <Widget>[
                                       SizedBox(
                                         width:
-                                            (config.cellWidth! - 1).toDouble(),
+                                        (config.cellWidth! - 1).toDouble(),
                                       ),
                                       // The vertical lines that divides the columns
                                       //TODO: Make a configurable color for this (maybe a size too)
                                       Container(
                                         width: 1,
                                         height: (config.totalHours *
-                                                config.cellHeight!) +
+                                            config.cellHeight!) +
                                             config.cellHeight!,
                                         color: Colors.black12,
                                       )
@@ -367,8 +378,8 @@ class _TimePlannerState extends State<TimePlanner> {
                                 Container(
                                   width: 1,
                                   height:
-                                      (config.totalHours * config.cellHeight!) +
-                                          config.cellHeight!,
+                                  (config.totalHours * config.cellHeight!) +
+                                      config.cellHeight!,
                                   color: Colors.black12,
                                 )
                               ],
