@@ -1,5 +1,5 @@
 class TimePlannerDateTime {
-  /// Day index from 0, this index dependence on your time planner header
+
   int day;
 
   /// Task will be begin at this hour
@@ -13,4 +13,22 @@ class TimePlannerDateTime {
     required this.hour,
     required this.minutes,
   });
+
+  bool isAfter(TimePlannerDateTime other) {
+    return day > other.day || (day == other.day && hour > other.hour) ||
+        (day == other.day && hour == other.hour && minutes > other.minutes);
+  }
+
+  bool isBefore(TimePlannerDateTime other) {
+    return day < other.day || (day == other.day && hour < other.hour) ||
+        (day == other.day && hour == other.hour && minutes < other.minutes);
+  }
+
+  bool isBeforeInDay(TimePlannerDateTime other) {
+    return hour < other.hour || (hour == other.hour && minutes < other.minutes);
+  }
+
+  bool isAfterInDay(TimePlannerDateTime other) {
+    return hour > other.hour || (hour == other.hour && minutes > other.minutes);
+  }
 }

@@ -22,9 +22,6 @@ class TimePlannerStyle {
   /// If defined, this color will be used as background color for rows with even index.
   Color? interstitialEvenColor;
 
-  /// Show horizontal and vertical [scrollBar] on time planner, default is false.
-  bool? showScrollBar;
-
   /// Border radius for tasks, default is `BorderRadius.all(Radius.circular(8.0))`
   BorderRadiusGeometry? borderRadius;
 
@@ -35,7 +32,6 @@ class TimePlannerStyle {
     this.backgroundColor,
     this.interstitialOddColor,
     this.interstitialEvenColor,
-    this.showScrollBar,
     this.horizontalTaskPadding,
     this.borderRadius,
   });

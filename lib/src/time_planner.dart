@@ -50,15 +50,14 @@ class TimePlanner extends StatefulWidget {
     this.currentTimeAnimation,
   }) : super(key: key);
 
+
   @override
   _TimePlannerState createState() => _TimePlannerState();
 }
 
 class _TimePlannerState extends State<TimePlanner> {
-  ScrollController mainHorizontalController = ScrollController();
   ScrollController mainVerticalController = ScrollController();
-  ScrollController dayHorizontalController = ScrollController();
-  ScrollController timeVerticalController = ScrollController();
+
   TimePlannerStyle style = TimePlannerStyle();
   List<TimePlannerTask> tasks = [];
   bool? isAnimated = true;
@@ -69,7 +68,7 @@ class _TimePlannerState extends State<TimePlanner> {
       throw FlutterError("Start hour should be lower than end hour");
     } else if (widget.startHour < 0) {
       throw FlutterError("Start hour should be larger than 0");
-    } else if (widget.endHour > 23) {
+    } else if (widget.endHour > 24) {
       throw FlutterError("Start hour should be lower than 23");
     } else if (widget.headers.isEmpty) {
       throw FlutterError("header can't be empty");
@@ -85,7 +84,6 @@ class _TimePlannerState extends State<TimePlanner> {
     style.borderRadius = widget.style?.borderRadius ??
         const BorderRadius.all(Radius.circular(8.0));
     style.dividerColor = widget.style?.dividerColor;
-    style.showScrollBar = widget.style?.showScrollBar ?? false;
     style.interstitialOddColor = widget.style?.interstitialOddColor;
     style.interstitialEvenColor = widget.style?.interstitialEvenColor;
   }
@@ -107,6 +105,27 @@ class _TimePlannerState extends State<TimePlanner> {
     tasks = widget.tasks ?? [];
   }
 
+  setParallelOrder(List<TimePlannerTask> tasks) {
+    tasks.sort((a, b) => a.minutesDuration.compareTo(b.minutesDuration));
+
+    for (int i = 0; i < tasks.length; i++) {
+      for (int j = i + 1; j < tasks.length; j++) {
+        if (tasks[i].isConflictInDay(tasks[j])) {
+          tasks[i].conflictCount++;
+          tasks[j].conflictCount++;
+          if (tasks[i].parallelOrder > tasks[j].parallelOrder) {
+            tasks[i].dateTime.day ++;
+            tasks[i].endDateTime.day ++;
+          } else {
+            tasks[j].dateTime.day ++;
+            tasks[j].endDateTime.day ++;
+          }
+        }
+      }
+    }
+  }
+
+
   @override
   void initState() {
     _initData();
@@ -120,11 +139,6 @@ class _TimePlannerState extends State<TimePlanner> {
           double scrollOffset =
               (hour - widget.startHour) * config.cellHeight!.toDouble();
           mainVerticalController.animateTo(
-            scrollOffset,
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeOutCirc,
-          );
-          timeVerticalController.animateTo(
             scrollOffset,
             duration: const Duration(milliseconds: 800),
             curve: Curves.easeOutCirc,
@@ -143,22 +157,17 @@ class _TimePlannerState extends State<TimePlanner> {
   Widget build(BuildContext context) {
     // we need to update the tasks list in case the tasks have changed
     tasks = widget.tasks ?? [];
-    mainHorizontalController.addListener(() {
-      dayHorizontalController.jumpTo(mainHorizontalController.offset);
-    });
-    mainVerticalController.addListener(() {
-      timeVerticalController.jumpTo(mainVerticalController.offset);
-    });
+    setParallelOrder(tasks);
+
+
     return GestureDetector(
-      child: Container(
-        color: style.backgroundColor,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if(widget.showHeader)SingleChildScrollView(
-              controller: dayHorizontalController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (widget.showHeader)
+            SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const NeverScrollableScrollPhysics(),
               child: Row(
@@ -169,183 +178,72 @@ class _TimePlannerState extends State<TimePlanner> {
                   const SizedBox(
                     width: 60,
                   ),
-                  for (int i = 0; i < config.totalDays; i++) widget.headers[i],
+                  for (int i = 0; i < config.totalDays; i++) widget
+                      .headers[i],
                 ],
               ),
             ),
+          if (widget.showHeader)
             Container(
               height: 1,
               color: style.dividerColor ?? Theme
                   .of(context)
                   .primaryColor,
             ),
-            Expanded(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context)
-                        .copyWith(scrollbars: false),
-                    child: SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      controller: timeVerticalController,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              //first number is start hour and second number is end hour
-                              for (int i = widget.startHour;
-                              i <= widget.endHour;
-                              i++)
-                                Padding(
-                                  // we need some additional padding horizontally if we're showing in am/pm format
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: !config.use24HourFormat ? 4 : 0,
-                                  ),
-                                  child: TimePlannerTime(
-                                    // this returns the formatted time string based on the use24HourFormat argument.
-                                    time: formattedTime(i),
-                                    setTimeOnAxis: config.setTimeOnAxis,
-                                  ),
-                                )
-                            ],
-                          ),
-                          Container(
-                            height:
-                            (config.totalHours * config.cellHeight!) + 80,
-                            width: 1,
-                            color: style.dividerColor ??
-                                Theme
-                                    .of(context)
-                                    .primaryColor,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Expanded(
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Expanded(
+                  child: Container(
                     child: buildMainBody(),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget buildMainBody() {
-    if (style.showScrollBar!) {
-      return Scrollbar(
-        controller: mainVerticalController,
-        thumbVisibility: true,
-        child: SingleChildScrollView(
-          controller: mainVerticalController,
-          child: Scrollbar(
-            controller: mainHorizontalController,
-            thumbVisibility: true,
-            child: SingleChildScrollView(
-              controller: mainHorizontalController,
-              scrollDirection: Axis.horizontal,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                        height: (config.totalHours * config.cellHeight!) + 80,
-                        width:
-                        (config.totalDays * config.cellWidth!).toDouble(),
-                        child: Stack(
-                          children: <Widget>[
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                for (var i = 0; i < config.totalHours; i++)
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      Container(
-                                        color: i.isOdd
-                                            ? style.interstitialOddColor
-                                            : style.interstitialEvenColor,
-                                        height:
-                                        (config.cellHeight! - 1).toDouble(),
-                                      ),
-                                      // The horizontal lines tat divides the rows
-                                      //TODO: Make a configurable color for this (maybe a size too)
-                                      const Divider(
-                                        height: 1,
-                                      ),
-                                    ],
-                                  )
-                              ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                for (var i = 0; i < config.totalDays; i++)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      SizedBox(
-                                        width:
-                                        (config.cellWidth! - 1).toDouble(),
-                                      ),
-                                      // The vertical lines that divides the columns
-                                      //TODO: Make a configurable color for this (maybe a size too)
-                                      Container(
-                                        width: 1,
-                                        height: (config.totalHours *
-                                            config.cellHeight!) +
-                                            config.cellHeight!,
-                                        color: Colors.black12,
-                                      )
-                                    ],
-                                  )
-                              ],
-                            ),
-                            for (int i = 0; i < tasks.length; i++) tasks[i],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
     return SingleChildScrollView(
       controller: mainVerticalController,
-      child: SingleChildScrollView(
-        controller: mainHorizontalController,
-        scrollDirection: Axis.horizontal,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: MainAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                SizedBox(
-                  height: (config.totalHours * config.cellHeight!) + 80,
-                  width: (config.totalDays * config.cellWidth!).toDouble(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Row(
+            mainAxisSize: MainAxisSize.max,
+            children: <Widget>[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: <Widget>[
+                  //first number is start hour and second number is end hour
+                  for (int i = widget.startHour; i <= widget.endHour; i++)
+                    Padding(
+                      // we need some additional padding horizontally if we're showing in am/pm format
+                      padding: EdgeInsets.symmetric(
+                        horizontal: !config.use24HourFormat ? 4 : 0,
+                      ),
+                      child: TimePlannerTime(
+                        // this returns the formatted time string based on the use24HourFormat argument.
+                        time: formattedTime(i),
+                        setTimeOnAxis: config.setTimeOnAxis,
+                      ),
+                    )
+                ],
+              ),
+              SizedBox(width: 4,),
+              Expanded(
+                child: Container(
+                  color: style.backgroundColor,
+                  height: (config.totalHours * config.cellHeight!) + 100,
+                  padding: const EdgeInsets.only(top: 18),
+                  width: double.infinity,
                   child: Stack(
                     children: <Widget>[
                       Column(
@@ -353,35 +251,24 @@ class _TimePlannerState extends State<TimePlanner> {
                         children: <Widget>[
                           for (var i = 0; i < config.totalHours; i++)
                             Column(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisSize: MainAxisSize.max,
                               children: <Widget>[
-                                SizedBox(
-                                  height: (config.cellHeight! - 1).toDouble(),
-                                ),
-                                const Divider(
-                                  height: 1,
-                                ),
-                              ],
-                            )
-                        ],
-                      ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          for (var i = 0; i < config.totalDays; i++)
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: <Widget>[
-                                SizedBox(
-                                  width: (config.cellWidth! - 1).toDouble(),
-                                ),
                                 Container(
-                                  width: 1,
-                                  height:
-                                  (config.totalHours * config.cellHeight!) +
-                                      config.cellHeight!,
-                                  color: Colors.black12,
-                                )
+                                  height: (config.cellHeight!).toDouble(),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                        bottom: const BorderSide(
+                                          color: Colors.black12,
+                                          width: 1,
+                                        ),
+                                        top: (i == 0)
+                                            ? const BorderSide(
+                                          color: Colors.black12,
+                                          width: 1,
+                                        )
+                                            : BorderSide.none),
+                                  ),
+                                ),
                               ],
                             )
                         ],
@@ -390,10 +277,10 @@ class _TimePlannerState extends State<TimePlanner> {
                     ],
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
