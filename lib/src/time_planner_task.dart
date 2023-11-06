@@ -70,12 +70,23 @@ class TimePlannerTask extends StatelessWidget {
     if (dateTime.day > 0) {
       print("");
     }
+    double top = ((config.cellHeight! * (dateTime.hour - config.startHour)) +
+        ((dateTime.minutes * config.cellHeight!) / 60))
+        .toDouble();
+    double left = 314 / (conflictCount + 1) * (dateTime.day).toDouble() +
+        (leftSpace ?? 0);
+
+    double cellHeight =
+    ((minutesDuration.toDouble() * config.cellHeight!) / 60);
+    if (cellHeight < 0) {
+      cellHeight = -cellHeight;
+    } else if (cellHeight > 0 && cellHeight < 30) {
+      cellHeight = 30;
+    }
+
     return Positioned(
-      top: ((config.cellHeight! * (dateTime.hour - config.startHour)) +
-          ((dateTime.minutes * config.cellHeight!) / 60))
-          .toDouble(),
-      left: 314 / (conflictCount + 1) * (dateTime.day).toDouble() +
-          (leftSpace ?? 0),
+      top: top,
+      left: left,
       child: Container(
         width: 314 / (conflictCount + 1),
         margin: EdgeInsets.only(bottom: 5),
@@ -90,14 +101,11 @@ class TimePlannerTask extends StatelessWidget {
               children: [
                 Align(
                   alignment: Alignment.topLeft,
-                  child:
-                  InkWell(
-                    onTap: onTap as void Function() ? ?? () {},
+                  child: InkWell(
+                    onTap: onTap as void Function()? ?? () {},
                     child: Container(
                       alignment: Alignment.topLeft,
-                      height: ((minutesDuration.toDouble() *
-                          config.cellHeight!) /
-                          60 - 10), //60 minutes
+                      height: cellHeight, //60 minutes
                       // (daysDuration! >= 1 ? daysDuration! : 1)),
                       decoration: BoxDecoration(
                           borderRadius: config.borderRadius,
@@ -105,16 +113,14 @@ class TimePlannerTask extends StatelessWidget {
                               .of(context)
                               .primaryColor),
                       child: child,
-
                     ),
-                  ),),
+                  ),
+                ),
               ],
-            ),)
-          ,
-        )
-        ,
-      )
-      ,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
